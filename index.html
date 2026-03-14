@@ -1,0 +1,157 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Bible Wrapper</title>
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      background: #0f1115;
+      color: #e5e7eb;
+      font-family: system-ui, sans-serif;
+    }
+
+    .topbar {
+      box-sizing: border-box;
+      width: 100%;
+      padding: 10px 14px;
+      background: #111827;
+      border-bottom: 1px solid #1f2937;
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    input {
+      flex: 1 1 320px;
+      min-width: 220px;
+      padding: 10px 12px;
+      border-radius: 10px;
+      border: 1px solid #374151;
+      background: #0f172a;
+      color: #e5e7eb;
+      outline: none;
+    }
+
+    button, a.button {
+      padding: 10px 14px;
+      border-radius: 10px;
+      border: 1px solid #374151;
+      background: #1f2937;
+      color: #e5e7eb;
+      text-decoration: none;
+      cursor: pointer;
+    }
+
+    .frame-wrap {
+      width: 100%;
+      height: calc(100vh - 61px);
+      background: #0f1115;
+    }
+
+    iframe {
+      width: 100%;
+      height: 100%;
+      border: 0;
+      background: #0f1115;
+      filter: invert(1) hue-rotate(180deg) contrast(0.92) brightness(0.9);
+    }
+
+    .message {
+      display: none;
+      padding: 24px;
+      line-height: 1.6;
+    }
+
+    .message a {
+      color: #93c5fd;
+    }
+  </style>
+</head>
+<body>
+  <div class="topbar">
+    <input id="refInput" type="text" placeholder="Ejemplo: GEN.1.RVR1960" />
+    <button id="loadBtn">Cargar</button>
+    <a id="openDirect" class="button" href="#" target="_blank" rel="noopener noreferrer">Abrir directo</a>
+  </div>
+
+  <div class="frame-wrap" id="frameWrap">
+    <iframe id="bibleFrame" loading="eager" referrerpolicy="no-referrer"></iframe>
+  </div>
+
+  <div class="message" id="messageBox">
+    <h2>No se pudo mostrar Bible.com dentro del iframe</h2>
+    <p>
+      Eso normalmente significa que Bible.com bloquea el embebido externo.
+      Tu wrapper sigue sirviendo para generar la URL correcta y abrirla directamente.
+    </p>
+    <p>
+      Intenta abrir esta referencia en una pestaña nueva:
+      <br />
+      <a id="directLinkText" href="#" target="_blank" rel="noopener noreferrer"></a>
+    </p>
+  </div>
+
+  <script>
+    function getRefFromUrl() {
+      const params = new URLSearchParams(window.location.search);
+      return params.get("ref") || "GEN.1.RVR1960";
+    }
+
+    function buildBibleUrl(ref) {
+      return "https://www.bible.com/bible/149/" + encodeURIComponent(ref);
+    }
+
+    function updatePage(ref, replaceHistory = true) {
+      const safeRef = (ref || "GEN.1.RVR1960").trim().toUpperCase();
+      const bibleUrl = buildBibleUrl(safeRef);
+
+      document.getElementById("refInput").value = safeRef;
+      document.getElementById("bibleFrame").src = bibleUrl;
+      document.getElementById("openDirect").href = bibleUrl;
+      document.getElementById("directLinkText").href = bibleUrl;
+      document.getElementById("directLinkText").textContent = bibleUrl;
+
+      if (replaceHistory) {
+        const newUrl = window.location.pathname + "?ref=" + encodeURIComponent(safeRef);
+        history.replaceState({}, "", newUrl);
+      }
+    }
+
+    document.getElementById("loadBtn").addEventListener("click", () => {
+      const ref = document.getElementById("refInput").value;
+      updatePage(ref);
+    });
+
+    document.getElementById("refInput").addEventListener("keydown", (e) => {
+      if (e.key === "Enter") {
+        updatePage(e.target.value);
+      }
+    });
+
+    const iframe = document.getElementById("bibleFrame");
+    const frameWrap = document.getElementById("frameWrap");
+    const messageBox = document.getElementById("messageBox");
+
+    let loaded = false;
+
+    iframe.addEventListener("load", () => {
+      loaded = true;
+    });
+
+    setTimeout(() => {
+      if (!loaded) {
+        frameWrap.style.display = "none";
+        messageBox.style.display = "block";
+      }
+    }, 4000);
+
+    updatePage(getRefFromUrl(), false);
+  </script>
+</body>
+</html>
