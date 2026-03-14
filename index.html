@@ -1,181 +1,76 @@
 <!doctype html>
 <html lang="es">
+
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Bible Viewer</title>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
 
-  <style>
-    html, body {
-      margin: 0;
-      padding: 0;
-      height: 100%;
-      width: 100%;
-      background: #191919;
-      overflow: hidden;
-      font-family: system-ui, sans-serif;
-    }
+<title>Bible Viewer</title>
 
-    .frame-wrap {
-      width: 100%;
-      height: 100vh;
-      overflow: hidden;
-      background: #191919;
-      position: relative;
-    }
+<style>
 
-    iframe {
-      width: 100%;
-      height: calc(100vh + 150px);
-      border: none;
-      background: #191919;
-      transform: translateY(-150px);
-      filter: invert(1) hue-rotate(180deg) contrast(0.9) brightness(0.85);
-    }
+/* fondo general */
+html, body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  background: #191919;
+  overflow: hidden;
+  font-family: system-ui, sans-serif;
+}
 
-    .loading,
-    .fallback {
-      position: absolute;
-      inset: 0;
-      display: grid;
-      place-items: center;
-      background: #191919;
-      color: #f3f4f6;
-      text-align: center;
-      padding: 24px;
-      line-height: 1.6;
-    }
+/* contenedor del iframe */
+.frame-wrap {
+  width: 100%;
+  height: 100vh;
+  overflow: hidden;
+  background: #191919;
+}
 
-    .fallback {
-      display: none;
-    }
+/* iframe con recorte del header */
+iframe {
+  width: 100%;
+  height: calc(100vh + 160px);
+  border: none;
 
-    .card {
-      max-width: 720px;
-      padding: 24px;
-      border: 1px solid #2a2a2a;
-      border-radius: 16px;
-      background: #202020;
-      box-shadow: 0 10px 30px rgba(0,0,0,.25);
-    }
+  /* recorta barra superior de YouVersion */
+  transform: translateY(-160px);
 
-    .title {
-      margin: 0 0 12px;
-      font-size: 24px;
-      font-weight: 700;
-    }
+  /* dark mode */
+  filter: invert(1) hue-rotate(180deg) contrast(0.92) brightness(0.9);
+}
 
-    .text {
-      margin: 0 0 12px;
-      font-size: 15px;
-      color: #d1d5db;
-    }
+</style>
 
-    .link {
-      color: #93c5fd;
-      word-break: break-all;
-    }
-
-    .hidden {
-      display: none !important;
-    }
-  </style>
 </head>
+
 <body>
-  <div class="frame-wrap">
-    <div id="loading" class="loading">
-      <div class="card">
-        <h1 class="title">Cargando referencia bíblica…</h1>
-        <p class="text" id="loadingText">Preparando la vista.</p>
-      </div>
-    </div>
 
-    <iframe
-      id="bibleFrame"
-      loading="eager"
-      referrerpolicy="no-referrer">
-    </iframe>
+<div class="frame-wrap">
+  <iframe id="bibleFrame"></iframe>
+</div>
 
-    <div id="fallback" class="fallback">
-      <div class="card">
-        <h1 class="title">No se pudo embeber Bible.com</h1>
-        <p class="text">
-          La referencia fue leída correctamente, pero Bible.com puede bloquear
-          el embebido dentro de iframes.
-        </p>
-        <p class="text">
-          Referencia detectada: <strong id="fallbackRef"></strong>
-        </p>
-        <p class="text">
-          Abre directamente:
-        </p>
-        <p class="text">
-          <a id="directLink" class="link" href="#" target="_blank" rel="noopener noreferrer"></a>
-        </p>
-      </div>
-    </div>
-  </div>
+<script>
 
-  <script>
-    function normalizeRef(ref) {
-      if (!ref) return "GEN.1.RVR1960";
-      return ref.trim().replace(/^#/, "").replace(/^\/+|\/+$/g, "").toUpperCase();
-    }
+function getRefFromUrl() {
+  const params = new URLSearchParams(window.location.search);
+  return params.get("ref") || "GEN.1.RVR1960";
+}
 
-    function getRefFromUrl() {
-      const hash = window.location.hash;
-      return normalizeRef(hash || "GEN.1.RVR1960");
-    }
+function buildBibleUrl(ref) {
+  return "https://www.bible.com/bible/149/" + encodeURIComponent(ref);
+}
 
-    function buildBibleUrl(ref) {
-      return "https://www.bible.com/bible/149/" + encodeURIComponent(ref);
-    }
+function loadBible() {
+  const ref = getRefFromUrl();
+  const url = buildBibleUrl(ref);
 
-    function updateTitle(ref) {
-      document.title = ref + " | Bible Viewer";
-      document.getElementById("loadingText").textContent = "Referencia detectada: " + ref;
-    }
+  document.getElementById("bibleFrame").src = url;
+}
 
-    function showFallback(ref, url) {
-      document.getElementById("fallbackRef").textContent = ref;
-      const directLink = document.getElementById("directLink");
-      directLink.href = url;
-      directLink.textContent = url;
+loadBible();
 
-      document.getElementById("loading").classList.add("hidden");
-      document.getElementById("fallback").style.display = "grid";
-    }
+</script>
 
-    function hideLoading() {
-      document.getElementById("loading").classList.add("hidden");
-      document.getElementById("fallback").style.display = "none";
-    }
-
-    function loadReference() {
-      const ref = getRefFromUrl();
-      const bibleUrl = buildBibleUrl(ref);
-      const iframe = document.getElementById("bibleFrame");
-
-      updateTitle(ref);
-
-      let loaded = false;
-      iframe.onload = function () {
-        loaded = true;
-        hideLoading();
-      };
-
-      iframe.src = bibleUrl;
-
-      setTimeout(function () {
-        if (!loaded) {
-          showFallback(ref, bibleUrl);
-        }
-      }, 4500);
-    }
-
-    window.addEventListener("hashchange", loadReference);
-
-    loadReference();
-  </script>
 </body>
 </html>
