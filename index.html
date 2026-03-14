@@ -66,7 +66,7 @@
     }
 
     .text {
-      margin: 0;
+      margin: 0 0 12px;
       font-size: 15px;
       color: #d1d5db;
     }
@@ -99,14 +99,14 @@
     <div id="fallback" class="fallback">
       <div class="card">
         <h1 class="title">No se pudo embeber Bible.com</h1>
-        <p class="text" style="margin-bottom:12px;">
-          El wrapper sí está leyendo correctamente la referencia desde la URL,
-          pero Bible.com puede bloquear el embebido dentro de iframes.
+        <p class="text">
+          La referencia fue leída correctamente, pero Bible.com puede bloquear
+          el embebido dentro de iframes.
         </p>
-        <p class="text" style="margin-bottom:12px;">
+        <p class="text">
           Referencia detectada: <strong id="fallbackRef"></strong>
         </p>
-        <p class="text" style="margin-bottom:12px;">
+        <p class="text">
           Abre directamente:
         </p>
         <p class="text">
@@ -119,35 +119,21 @@
   <script>
     function normalizeRef(ref) {
       if (!ref) return "GEN.1.RVR1960";
-      return ref.trim().replace(/^\/+|\/+$/g, "").toUpperCase();
+      return ref.trim().replace(/^#/, "").replace(/^\/+|\/+$/g, "").toUpperCase();
+    }
+
+    function getRefFromUrl() {
+      const hash = window.location.hash;
+      return normalizeRef(hash || "GEN.1.RVR1960");
     }
 
     function buildBibleUrl(ref) {
       return "https://www.bible.com/bible/149/" + encodeURIComponent(ref);
     }
 
-    function getRefFromUrl() {
-      const path = window.location.pathname;
-
-      const segments = path.split("/").filter(Boolean);
-
-      if (segments.length === 0) {
-        return "GEN.1.RVR1960";
-      }
-
-      const lastSegment = decodeURIComponent(segments[segments.length - 1]);
-
-      if (lastSegment.endsWith(".HTML")) {
-        return "GEN.1.RVR1960";
-      }
-
-      return normalizeRef(lastSegment);
-    }
-
     function updateTitle(ref) {
       document.title = ref + " | Bible Viewer";
-      const loadingText = document.getElementById("loadingText");
-      loadingText.textContent = "Referencia detectada: " + ref;
+      document.getElementById("loadingText").textContent = "Referencia detectada: " + ref;
     }
 
     function showFallback(ref, url) {
@@ -162,29 +148,34 @@
 
     function hideLoading() {
       document.getElementById("loading").classList.add("hidden");
+      document.getElementById("fallback").style.display = "none";
     }
 
-    (function init() {
+    function loadReference() {
       const ref = getRefFromUrl();
       const bibleUrl = buildBibleUrl(ref);
       const iframe = document.getElementById("bibleFrame");
 
       updateTitle(ref);
-      iframe.src = bibleUrl;
 
       let loaded = false;
-
-      iframe.addEventListener("load", function () {
+      iframe.onload = function () {
         loaded = true;
         hideLoading();
-      });
+      };
+
+      iframe.src = bibleUrl;
 
       setTimeout(function () {
         if (!loaded) {
           showFallback(ref, bibleUrl);
         }
       }, 4500);
-    })();
+    }
+
+    window.addEventListener("hashchange", loadReference);
+
+    loadReference();
   </script>
 </body>
 </html>
